@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>repl.it</title>
+  </head>
+  <body>
+    <script
+  src="https://code.jquery.com/jquery-1.12.4.min.js"
+  integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+  crossorigin="anonymous"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.css">
+
+
+    <div id="title"></div>
+    <div id="data-container"></div>
+
+
+    <!-- <script src="script.js"></script> -->
+  </body>
+</html>
+
+
+<script>
+
+var webSock;
+
+$(document).ready(function() {
+
+    var wsUri = "ws://localhost:8765";
+    recolor();
+    var total_fields = 1;
+    var colors = $(".color_inputs");
+    var addButton = $("#add_color");
+    var finishButton = $("#finish");
+    var container = $("#data-container")
+
+    $(addButton).click(function(e){ //on add input button click
+        e.preventDefault();
+    total_fields++; //text box increment
+    $(colors).append('<div><input type="text" class="full"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+    recolor();
+    });
+
+    $(container).on("click",".remove_field", function(e){ //user click on remove text
+        e.preventDefault(); $(this).parent('div').remove();
+    });
+
+    $(container).on("click", "#config-button",(function(e) {
+        console.log($(this).html())
+        newConnect(wsUri, "detail:"+$(this).html());
+    }));
+
+    $(container).on("click", "#back-button",(function(e) {
+        console.log($(this).html())
+        newConnect(wsUri, "configs");
+    }));
+
+    $(container).on("click", "#add-color",(function(e) {
+        console.log($(this).html())
+        $(container).append('<div><input type="text" class="full"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+        recolor();
+    }));
+
+    $(container).on("click", "#finish",(function(e) {
+        console.log($(this).html())
+        var user_colors = [];
+
+        user_colors.push("save")
+        user_colors.push($("#title").html())
+
+        console.log("name: " + $("#name").val());
+        $(".full").each( function() {
+        console.log(" " + $(this).spectrum('get').toHexString());
+        user_colors.push($(this).spectrum('get').toHexString());
+        });
+        console.log(JSON.stringify(user_colors));
+        newConnect(wsUri, user_colors)
+
+
+    }));
+
+
+  newConnect(wsUri, 'configs');
+
+});
+
+
+
+function newConnect(wsUri, data) {
+    webSock = new WebSocket(wsUri);
+
+    webSock.onopen = function(evt) {
+      doSend(webSock, data);
+    };
+
+    webSock.onmessage = function(evt) {
+      onMessage(evt)
+    };
+
+    webSock.onerror = function(evt) {
+      onError(evt)
+    };
+}
+
+
+function onOpen(evt, ws) {
+   console.log("CONNECTED");
+   doSend(ws, "configs");
+}
+
+function onMessage(evt) {
+    console.log(evt.data);
+    d = JSON.parse(evt.data);
+    var container = $("#data-container");
+    var i;
+    if (d['command'] == "config") {
+        $("#title").html("Configs");
+        $(container).html("");
+        for (i = 0; i < d['config'].length; i++) {
+            console.log(d['config'][i]);
+            $(container).append('<div><button id="config-button">'+d['config'][i]+'</button></div></br>')
+        }
+    } else if (d['command'] == "data") {
+        $("#title").html(d['config-name']);
+        $(container).html("");
+        $(container).append('<div><button id="back-button">BACK</button></div></br>');
+        $(container).append('<button id="add-color">Add Color</button>');
+        $(container).append('<button id="finish">Save</button>');
+        for (i = 0; i < d['data'].length; i++) {
+            console.log(d['data'][i]);
+            $(container).append('<div><input type="text" class="full" id="#'+d['data'][i].toString(16)+'"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+        }
+        recolor();
+    }
+
+}
+
+function doSend(ws, message) {
+   console.log("SENT: " + message);
+   ws.send(message);
+}
+
+
+
+
+function recolor() {
+  $(".full").each( function() {
+    console.log("applying");
+    $(this).spectrum({
+      color: $(this).attr('id'),
+      showInput: true,
+      className: "full-spectrum",
+      showInitial: true,
+      showPalette: true,
+      showSelectionPalette: true,
+      maxSelectionSize: 10,
+      preferredFormat: "hex",
+      localStorageKey: "spectrum.demo",
+      move: function(color) {
+
+      },
+      show: function() {
+
+      },
+      beforeShow: function() {
+
+      },
+      hide: function() {
+
+      },
+      change: function() {
+
+      }
+    })
+  });
+}
+
+
+
+</script>
