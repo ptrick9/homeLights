@@ -1,2 +1,8 @@
 
 ESPController/secret.h
+
+ESPController/src/secret.h
+
+ESPControllerArduino/secrets.h.txt
+
+ESPControllerMicroPython/boot.py

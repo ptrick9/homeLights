@@ -1,8 +1,6 @@
 #include <FastLED.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
-
-#include "secret.h"
+#include "secrets.h"
 FASTLED_USING_NAMESPACE
 
 // FastLED "100-lines-of-code" demo reel, showing just a few 
@@ -25,36 +23,8 @@ FASTLED_USING_NAMESPACE
 #define NUM_LEDS    200
 CRGB leds[NUM_LEDS];
 
-#define BRIGHTNESS          50
+#define BRIGHTNESS          10
 #define FRAMES_PER_SECOND  1
-
-
-
-AsyncWebServer server(8765);
-AsyncWebSocket ws("/ws");
-
-void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
- 
-  if(type == WS_EVT_CONNECT){
- 
-    Serial.println("Websocket client connection received");
-    //client->text("Hello from ESP32 Server");
-    client->text("bright");
-    
- 
-  } else if(type == WS_EVT_DISCONNECT){
-    Serial.println("Client disconnected");
- 
-  } else if(type == WS_EVT_DATA) {
-    char* b = "   ";
-    for(int i = 0; i<len; i++) {
-      b[i] = (char)data[i];
-      Serial.println((char)data[i]);
-    }
-    uint8_t bbb = atoi(b);
-    FastLED.setBrightness(bbb);
-  }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -62,8 +32,6 @@ void setup() {
   delay(3000); // 3 second delay for recovery
 
   // Connect to Wi-Fi
-
-
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
@@ -72,10 +40,6 @@ void setup() {
 
   // Print ESP32 Local IP Address
   Serial.println(WiFi.localIP());
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
- 
-  server.begin();
   
   // tell FastLED about the LED strip configuration
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
@@ -89,7 +53,7 @@ void setup() {
 
 // List of patterns to cycle through.  Each is defined as a separate function below.
 typedef void (*SimplePatternList[])();
-//SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
+SimplePatternList gPatterns = { rainbow, rainbowWithGlitter, confetti, sinelon, juggle, bpm };
 
 uint8_t gCurrentPatternNumber = 0; // Index number of which pattern is current
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
@@ -145,7 +109,7 @@ void loop()
 }
 
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
-/*
+
 void nextPattern()
 {
   // add one to the current pattern number, and wrap around at the end
@@ -207,4 +171,4 @@ void juggle() {
     leds[beatsin16( i+7, 0, NUM_LEDS-1 )] |= CHSV(dothue, 200, 255);
     dothue += 32;
   }
-}*/
+}

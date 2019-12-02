@@ -16,6 +16,10 @@
 
 
     <div id="title"></div>
+    <div id="bright-container">
+        <div><input id="bright-val"></div>
+        <div><button id="bright-button">bright</button></div></br>
+    </div>
     <div id="data-container"></div>
 
 
@@ -30,13 +34,15 @@ var webSock;
 
 $(document).ready(function() {
 
-    var wsUri = "ws://localhost:8765";
+    //var wsUri = "ws://localhost:8765";
+    var wsUri = "ws://192.168.1.235:12345";
     recolor();
     var total_fields = 1;
     var colors = $(".color_inputs");
     var addButton = $("#add_color");
     var finishButton = $("#finish");
     var container = $("#data-container")
+    var bright_container = $("#bright-container")
 
     $(addButton).click(function(e){ //on add input button click
         e.preventDefault();
@@ -59,11 +65,40 @@ $(document).ready(function() {
         newConnect(wsUri, "configs");
     }));
 
+    $(bright_container).on("click", "#bright-button",(function(e) {
+        console.log($("#bright-val").val())
+        newConnect(wsUri, "bright:"+$("#bright-val").val());
+    }));
+
+    $(container).on("click", "#new-config-button",(function(e) {
+        console.log("new config")
+        newConnect(wsUri, "new");
+        //doSend(webSock, $("#bright-val").val())
+    }));
+
     $(container).on("click", "#add-color",(function(e) {
         console.log($(this).html())
         $(container).append('<div><input type="text" class="full"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
         recolor();
     }));
+
+    $(container).on("click", "#save-new-config",(function(e) {
+        console.log($(this).html())
+        var user_colors = [];
+
+        user_colors.push("save")
+        user_colors.push($("#title-name").val())
+
+        console.log("name: " + $("#title-name").val());
+        $(".full").each( function() {
+        console.log(" " + $(this).spectrum('get').toHexString());
+        user_colors.push($(this).spectrum('get').toHexString());
+        });
+        console.log(JSON.stringify(user_colors));
+        newConnect(wsUri, user_colors)
+    }));
+
+
 
     $(container).on("click", "#finish",(function(e) {
         console.log($(this).html())
@@ -79,12 +114,11 @@ $(document).ready(function() {
         });
         console.log(JSON.stringify(user_colors));
         newConnect(wsUri, user_colors)
-
-
     }));
 
 
   newConnect(wsUri, 'configs');
+  //  newConnect(wsUri, 'bright');
 
 });
 
@@ -95,10 +129,12 @@ function newConnect(wsUri, data) {
 
     webSock.onopen = function(evt) {
       doSend(webSock, data);
+      //  onOpen(evt,webSock);
     };
 
     webSock.onmessage = function(evt) {
-      onMessage(evt)
+      onMessage(evt);
+      webSock.close();
     };
 
     webSock.onerror = function(evt) {
@@ -109,13 +145,14 @@ function newConnect(wsUri, data) {
 
 function onOpen(evt, ws) {
    console.log("CONNECTED");
-   doSend(ws, "configs");
+    //doSend(ws, "bright");
 }
 
 function onMessage(evt) {
     console.log(evt.data);
-    d = JSON.parse(evt.data);
     var container = $("#data-container");
+    d = JSON.parse(evt.data);
+
     var i;
     if (d['command'] == "config") {
         $("#title").html("Configs");
@@ -124,24 +161,48 @@ function onMessage(evt) {
             console.log(d['config'][i]);
             $(container).append('<div><button id="config-button">'+d['config'][i]+'</button></div></br>')
         }
+        $(container).append('<div><button id="new-config-button">New Config</button></div></br>')
     } else if (d['command'] == "data") {
-        $("#title").html(d['config-name']);
-        $(container).html("");
-        $(container).append('<div><button id="back-button">BACK</button></div></br>');
-        $(container).append('<button id="add-color">Add Color</button>');
-        $(container).append('<button id="finish">Save</button>');
-        for (i = 0; i < d['data'].length; i++) {
-            console.log(d['data'][i]);
-            $(container).append('<div><input type="text" class="full" id="#'+d['data'][i].toString(16)+'"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+        if (d['config-name'] == "new") {
+            $(container).html("");
+            $(container).append('<div>NAME<input id="title-name"></div></br>')
+
+            $(container).append('<div><button id="back-button">BACK</button></div></br>');
+            $(container).append('<button id="add-color">Add Color</button>');
+            $(container).append('<button id="save-new-config">Save</button>');
+            $(container).append('<div><input type="text" class="full"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+            recolor();
+        } else {
+            $(container).html("");
+            $("#title").html(d['config-name']);
+
+            $(container).append('<div><button id="back-button">BACK</button></div></br>');
+            $(container).append('<button id="add-color">Add Color</button>');
+            $(container).append('<button id="finish">Save</button>');
+            for (i = 0; i < d['data'].length; i++) {
+                console.log(d['data'][i]);
+                $(container).append('<div><input type="text" class="full" id="#'+d['data'][i].toString(16)+'"/><a href="#" class="remove_field">Remove</a></div>'); //add input box
+            }
+            recolor();
         }
-        recolor();
+
     }
+    /*$(container).append('<div><input id="bright-val"></div></br>')
+    $(container).append('<div><button id="bright-button">bright</button></div></br>')*/
+    /*else if ()
+    if (evt.data == 'bright') {
+        $("#title").html("BRIGHT");
+        $(container).append('<div><input id="bright-val"></div></br>')
+        $(container).append('<div><button id="bright-button">bright</button></div></br>')
+
+    }*/
 
 }
 
 function doSend(ws, message) {
    console.log("SENT: " + message);
    ws.send(message);
+
 }
 
 

@@ -4,7 +4,7 @@ import json
 
 
 
-configs = ['a', 'b', 'c', 'd', 'e']
+configs = ['a', 'badfasdfa', 'c', 'd', 'e']
 
 colors = {'a':[0x123456, 0x234567, 0x345678]}
 
@@ -27,8 +27,11 @@ async def hello(websocket, path):
     else:
         data = name.split(',')
         name = data[1]
+        dat = []
         for color in data[2:]:
             print(color)
+            dat.append(int(color[1:], 16))
+        colors[name] = dat
 
 
 start_server = websockets.serve(hello, "localhost", 8765)
