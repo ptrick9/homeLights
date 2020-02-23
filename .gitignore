@@ -6,3 +6,5 @@ ESPController/src/secret.h
 ESPControllerArduino/secrets.h.txt
 
 ESPControllerMicroPython/boot.py
+
+ESPControllerArduino/ESPControllerArduino/secrets.h

@@ -6,6 +6,7 @@ from time import sleep
 import os
 import machine, neopixel
 import gc
+import time
 WS_CHAT_SUB_PROTOCOL = 'myGreatChat-v1'
 
 gc.enable()
@@ -18,6 +19,13 @@ NUM_LED = 250
 np = neopixel.NeoPixel(machine.Pin(3), NUM_LED)
 
 BRIGHT = 1.0
+
+position = 0
+steps = 50
+seqLen = 0
+
+oldPixelCopy = [0 for i in range(250)]
+
 
 try:
 
@@ -117,6 +125,7 @@ try:
 
     def runLast():
         print(gc.mem_free())
+        global seqLen
         try:
             try:
                 f = open('bright', 'r')
@@ -133,6 +142,7 @@ try:
                 colors.append(int(line))
             dat = colors
             mod = len(dat)
+            seqLen = len(dat)
             for i in range(NUM_LED):
                 r = int(float((dat[i % mod] >> 16)) * BRIGHT)
                 g = int(float((dat[i % mod] >> 8) & 0xff) * BRIGHT)
@@ -147,6 +157,8 @@ try:
         print(gc.mem_free())
 
     runLast()
+
+
 
 
     def SetBarebonesConfig(mws_s):
@@ -182,10 +194,42 @@ try:
 
     print(gc.mem_free())
     # Main program loop until keyboard interrupt,
+
+    #GRB
     try :
-        while mws2.IsRunning :
-            sleep(1)
-    except KeyboardInterrupt :
+        while mws2.IsRunning:
+            posOff = 0
+            for i in range(NUM_LED):
+                oldPixelCopy[i] = np[i]
+            while(posOff < seqLen):
+                #s = np[0]
+                #for i in range(NUM_LED-1):
+                #    oldPixelCopy[i] = np[i+1]
+                #oldPixelCopy[249] = s
+
+                for s in range(steps):
+                    for i in range(NUM_LED):
+                        deltaG = float(oldPixelCopy[(i-1+posOff)%NUM_LED][0] - oldPixelCopy[(i+posOff)%NUM_LED][0])/steps
+                        deltaR = float(oldPixelCopy[(i-1+posOff)%NUM_LED][1] - oldPixelCopy[(i+posOff)%NUM_LED][1])/steps
+                        deltaB = float(oldPixelCopy[(i-1+posOff)%NUM_LED][2] - oldPixelCopy[(i+posOff)%NUM_LED][2])/steps
+
+                        newG = oldPixelCopy[(i-1+posOff)%NUM_LED][0] - int(deltaG * s)
+                        newR = oldPixelCopy[(i-1+posOff)%NUM_LED][1] - int(deltaR * s)
+                        newB = oldPixelCopy[(i-1+posOff)%NUM_LED][2] - int(deltaB * s)
+
+                        np[i] = (newG,newR,newB)
+                        if i == 1:
+                            print(i, s, deltaG, deltaR, deltaB, np[i], oldPixelCopy[(i+posOff)%NUM_LED], oldPixelCopy[(i-1+posOff)%NUM_LED])
+                    np.write()
+                    gc.collect()
+                    time.sleep_ms(5)
+                sleep(1)
+                posOff+=1
+                print(seqLen, posOff)
+            runLast()
+
+    except Exception as e:
+        print(e)
         pass
 
     # End,
