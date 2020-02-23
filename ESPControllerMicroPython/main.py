@@ -117,6 +117,7 @@ try:
 
     def runLast():
         print(gc.mem_free())
+        global BRIGHT
         try:
             try:
                 f = open('bright', 'r')
